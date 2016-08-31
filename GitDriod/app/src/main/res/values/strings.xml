@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">GitDroidDG</string>
+    <string name="app_name">GitDroid</string>
 
     <string name="login_github">登录GitHub</string>
     <string name="enter_app">直接使用</string>
