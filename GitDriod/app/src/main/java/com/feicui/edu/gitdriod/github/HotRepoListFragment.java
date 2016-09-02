@@ -14,6 +14,10 @@ import android.widget.TextView;
 import com.feicui.edu.gitdriod.R;
 import com.feicui.edu.gitdriod.commons.ActivityUtils;
 import com.feicui.edu.gitdriod.components.FooterView;
+import com.feicui.edu.gitdriod.favorite.dao.DBHelp;
+import com.feicui.edu.gitdriod.favorite.dao.LocalRepoDao;
+import com.feicui.edu.gitdriod.favorite.model.LocalRepo;
+import com.feicui.edu.gitdriod.favorite.model.RepoConverter;
 import com.feicui.edu.gitdriod.github.model.Repo;
 import com.feicui.edu.gitdriod.github.repoinfo.RepoInfoActivity;
 import com.feicui.edu.gitdriod.github.view.Language;
@@ -86,9 +90,42 @@ public class HotRepoListFragment extends Fragment implements RepoListView {
                 //点击某一条跳转到详情页
                 Repo repo = (Repo) adapter.getItem(position);
                 RepoInfoActivity.open(getContext(), repo);
+
+            }
+
+
+        });
+        lvRepos.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+
+                /**
+                 * 1.获取到我们长按的ListView的数据
+                 * 2.将数据添加到本地仓库数据库表中
+                 * 3.Dao里面需要传入的是LocalRepo
+                 * 4.Repo  LocalRepo   要做的：将Repo转换为LocalRepo
+                 */
+
+                Repo repo = (Repo) adapter.getItem(position);
+                LocalRepo localRepo = RepoConverter.convert(repo);
+
+                new LocalRepoDao(DBHelp.getInstance(getContext())).createOrUpdate(localRepo);
+                DBHelp dBhelp = DBHelp.getInstance(getContext());
+                LocalRepoDao localRepoDao = new LocalRepoDao(dBhelp);
+                List<LocalRepo> list = localRepoDao.queryAll();
+                for (int x = 0;x<list.size();x++) {
+                    LocalRepo local = list.get(x);
+                    if(local.getName().equals(localRepo.getName())) {
+                        activityUtils.showToast("已经收藏过了");
+                        return false;
+                    }
+                }
+                localRepoDao.createOrUpdate(localRepo);
+                activityUtils.showToast("收藏成功");
+                return false;
+
             }
         });
-
         if (adapter.getCount()==0){
             ptrFrameLayout.postDelayed(new Runnable() {
                 @Override public void run() {
