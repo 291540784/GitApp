@@ -1,5 +1,7 @@
 package com.feicui.edu.gitdriod.favorite;
 
+import android.annotation.TargetApi;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -11,6 +13,7 @@ import android.view.MenuItem;
 import android.view.SubMenu;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.PopupMenu;
@@ -20,6 +23,7 @@ import com.feicui.edu.gitdriod.R;
 import com.feicui.edu.gitdriod.favorite.dao.DBHelp;
 import com.feicui.edu.gitdriod.favorite.dao.LocalRepoDao;
 import com.feicui.edu.gitdriod.favorite.dao.RepoGroupDao;
+import com.feicui.edu.gitdriod.favorite.model.LocalRepo;
 import com.feicui.edu.gitdriod.favorite.model.RepoGroup;
 
 import java.util.List;
@@ -43,6 +47,7 @@ public class FavoriteFragment extends Fragment implements PopupMenu.OnMenuItemCl
     private RepoGroupDao repoGroupDao;
     private LocalRepoDao localRepoDao;
     private FavoriteAdapter adapter;
+    private LocalRepo currentLocalRepo;
     private int currentRepoGroupId;
 
     @Override
@@ -68,11 +73,12 @@ public class FavoriteFragment extends Fragment implements PopupMenu.OnMenuItemCl
 
         //默认显示的是全部的数据
         setData(R.id.repo_group_all);
-
+        currentRepoGroupId = R.id.repo_group_all;
         //注册上下文菜单，表明我们的菜单注册到listViews上
         registerForContextMenu(listView);
     }
 
+    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     @OnClick(R.id.btnFilter)
     public void showPopupMenu(View view){
         PopupMenu popupMenu = new PopupMenu(getContext(),view);
@@ -131,6 +137,14 @@ public class FavoriteFragment extends Fragment implements PopupMenu.OnMenuItemCl
         super.onCreateContextMenu(menu, v, menuInfo);
         //menu上下文菜单， V作用到的V上Context 上下文菜单信息
         if(v.getId() == R.id.listView){
+            /**
+             * 使用ContextMenuInfo实现类完成我们选择的仓库的获取，
+             * position  利用adapter来获取我们当前作用的仓库
+             */
+            AdapterView.AdapterContextMenuInfo adapterContextMenuInfo = (AdapterView.AdapterContextMenuInfo) menuInfo;
+            int position = adapterContextMenuInfo.position;
+            //当前操作的本地仓库
+            currentLocalRepo = adapter.getItem(position);
             //将Menu填充到上下文菜单ContextMenu
             MenuInflater menuInflater = getActivity().getMenuInflater();
             menuInflater.inflate(R.menu.menu_context_favorite,menu);
@@ -146,8 +160,32 @@ public class FavoriteFragment extends Fragment implements PopupMenu.OnMenuItemCl
 
     @Override
     public boolean onContextItemSelected(MenuItem item) {
+        int id = item.getItemId();
 
+        //点击删除
+        if (id == R.id.delete){
+            //删除作用的仓库
+            localRepoDao.delete(currentLocalRepo);
+            setData(currentRepoGroupId);
+            return true;
+        }
+        int groupId = item.getGroupId();
+        if(groupId == R.id.menu_group_move){
+            //移动的操作--未分类，网络连接....（数据库里面获取）
+            if(id == R.id.repo_group_no){
+                //将我们的作用的仓库累改为未分类，也就是累类为null
+                currentLocalRepo.setRepoGroup(null);
+            }else{
+                //得到我们点击的是哪一个类别，将我们当前的仓库类别改为当前点击的类别
 
+                RepoGroup repoGroup =  repoGroupDao.queryForId(id);
+                currentLocalRepo.setRepoGroup(repoGroup);
+            }
+            //数据库更新
+            localRepoDao.createOrUpdate(currentLocalRepo);
+            setData(currentRepoGroupId);
+            return true;
+        }
         return super.onContextItemSelected(item);
     }
 }

@@ -66,6 +66,14 @@ public class LocalRepo {
     @SerializedName("group")
     private RepoGroup repoGroup;
 
+    public RepoGroup getRepoGroup() {
+        return repoGroup;
+    }
+
+    public void setRepoGroup(RepoGroup repoGroup) {
+        this.repoGroup = repoGroup;
+    }
+
     public int getId() {
         return id;
     }
