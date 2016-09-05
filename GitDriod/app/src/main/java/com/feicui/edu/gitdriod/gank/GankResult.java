@@ -11,7 +11,7 @@ public class GankResult {
     private List<String> category;
 
     private boolean error;
-
+    @SerializedName("results")
     private Result result;
 
     public List<String> getCategory() {
